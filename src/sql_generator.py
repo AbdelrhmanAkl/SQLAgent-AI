@@ -1,5 +1,6 @@
 import os
 
+import streamlit as st
 from dotenv import load_dotenv
 from langchain_google_genai import ChatGoogleGenerativeAI
 
@@ -14,8 +15,15 @@ class SQLGenerator:
         api_key = os.getenv("GOOGLE_API_KEY")
 
         if not api_key:
+            try:
+                api_key = st.secrets.get("GOOGLE_API_KEY")
+            except Exception:
+                api_key = None
+
+        if not api_key:
             raise ValueError(
-                "GOOGLE_API_KEY was not found in the .env file."
+                "GOOGLE_API_KEY was not found in environment variables "
+                "or Streamlit Secrets."
             )
 
         self.llm = ChatGoogleGenerativeAI(
@@ -107,7 +115,6 @@ STRICT RULES:
         previous_sql: str,
         error: str,
     ) -> str:
-
         prompt = f"""
 You are an expert SQLite SQL debugging agent.
 
