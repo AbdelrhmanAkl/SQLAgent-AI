@@ -669,7 +669,7 @@ The result is an end-to-end **AI analytics application** capable of translating 
 
 # 👨‍💻 Author
 
-## Abdelrahman Ahmed Akl
+## Eng.Abdelrahman Ahmed Akl
 
 **AI Engineer | AI Instructor | Agentic AI & LLMs**
 
