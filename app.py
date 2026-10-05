@@ -1,4 +1,4 @@
-﻿import streamlit as st
+import streamlit as st
 
 from src.graph import SQLAgentGraph
 
@@ -16,6 +16,20 @@ st.set_page_config(
 
 
 # ============================================================
+# Design Tokens (calm, light, elegant palette)
+# ============================================================
+
+CHART_COLORWAY = [
+    "#7c8cf0",  # periwinkle
+    "#8fd3c4",  # mint
+    "#f2b8c6",  # blush
+    "#f5d6a0",  # sand
+    "#b7a6ee",  # lavender
+    "#9bc5ee",  # sky
+]
+
+
+# ============================================================
 # Custom Styling
 # ============================================================
 
@@ -23,17 +37,44 @@ st.markdown(
     """
     <style>
 
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+    :root {
+        --bg: #f8f8fd;
+        --bg-soft: #f1f2fb;
+        --card: #ffffff;
+        --border: #e9ebf7;
+        --border-strong: #d9ddf5;
+        --text: #2b2f45;
+        --text-soft: #6b7190;
+        --text-faint: #9aa0bd;
+        --accent: #6f7df0;
+        --accent-deep: #5766e6;
+        --accent-soft: #eef0ff;
+        --mint: #8fd3c4;
+        --shadow-sm: 0 2px 10px rgba(80, 90, 160, 0.05);
+        --shadow-md: 0 10px 30px rgba(80, 90, 160, 0.08);
+    }
+
+
     /* ========================================================
        Global
        ======================================================== */
 
+    html, body, .stApp, .stMarkdown, button, input, textarea {
+        font-family: 'Inter', -apple-system, 'Segoe UI', sans-serif;
+    }
+
     .stApp {
-        background-color: #f7fbff;
+        background:
+            radial-gradient(900px 500px at 85% -10%, #eceeff 0%, transparent 60%),
+            radial-gradient(800px 500px at -10% 10%, #eefaf6 0%, transparent 55%),
+            var(--bg);
     }
 
     .main .block-container {
-        max-width: 1200px;
-        padding-top: 2.5rem;
+        max-width: 1180px;
+        padding-top: 3.5rem;
         padding-bottom: 3rem;
     }
 
@@ -43,38 +84,34 @@ st.markdown(
        ======================================================== */
 
     .hero {
-        background: linear-gradient(
-            135deg,
-            #ffffff 0%,
-            #eef7ff 100%
-        );
-        border: 1px solid #dbeafe;
-        border-radius: 20px;
-        padding: 2rem 2.2rem;
-        margin-bottom: 1.5rem;
-        box-shadow:
-            0 8px 30px rgba(30, 64, 175, 0.06);
+        background: linear-gradient(135deg, #ffffff 0%, #f3f4ff 100%);
+        border: 1px solid var(--border);
+        border-radius: 24px;
+        padding: 2.2rem 2.4rem;
+        margin-bottom: 1.6rem;
+        box-shadow: var(--shadow-md);
     }
 
     .hero-title {
-        font-size: 2.5rem;
+        font-size: 2.4rem;
         font-weight: 800;
-        color: #0f2a43;
+        letter-spacing: -0.02em;
+        color: var(--text);
         margin-bottom: 0.25rem;
     }
 
     .hero-subtitle {
-        font-size: 1.15rem;
+        font-size: 1.1rem;
         font-weight: 600;
-        color: #2563eb;
-        margin-bottom: 0.8rem;
+        color: var(--accent);
+        margin-bottom: 0.9rem;
     }
 
     .hero-description {
-        font-size: 1rem;
-        color: #526579;
-        line-height: 1.7;
-        max-width: 900px;
+        font-size: 0.98rem;
+        color: var(--text-soft);
+        line-height: 1.75;
+        max-width: 880px;
     }
 
 
@@ -83,20 +120,44 @@ st.markdown(
        ======================================================== */
 
     .section-title {
-        font-size: 1.25rem;
-        font-weight: 750;
-        color: #17324d;
-        margin-top: 1.5rem;
-        margin-bottom: 0.7rem;
+        font-size: 1.2rem;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+        color: var(--text);
+        margin-top: 1.7rem;
+        margin-bottom: 0.8rem;
     }
 
 
     /* ========================================================
-       Query Area
+       Query Input
        ======================================================== */
 
+    div[data-baseweb="input"],
+    div[data-baseweb="input"] > div {
+        background: var(--card) !important;
+        border-radius: 14px !important;
+    }
+
     div[data-baseweb="input"] {
-        border-radius: 11px;
+        border: 1px solid var(--border-strong) !important;
+        box-shadow: var(--shadow-sm);
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    div[data-baseweb="input"]:focus-within {
+        border-color: var(--accent) !important;
+        box-shadow: 0 0 0 4px rgba(111, 125, 240, 0.14);
+    }
+
+    div[data-baseweb="input"] input {
+        color: var(--text);
+        font-size: 1rem;
+        padding: 0.8rem 1rem;
+    }
+
+    div[data-baseweb="input"] input::placeholder {
+        color: var(--text-faint);
     }
 
 
@@ -105,110 +166,119 @@ st.markdown(
        ======================================================== */
 
     .examples-header {
-        margin-top: 1rem;
-        margin-bottom: 0.8rem;
+        margin-top: 1.4rem;
+        margin-bottom: 0.9rem;
     }
 
     .examples-title {
-        color: #17324d;
+        color: var(--text);
         font-size: 1rem;
-        font-weight: 750;
+        font-weight: 700;
         margin-bottom: 0.15rem;
     }
 
     .examples-subtitle {
-        color: #64748b;
-        font-size: 0.82rem;
+        color: var(--text-faint);
+        font-size: 0.84rem;
     }
 
     .example-card {
-        background: #ffffff;
-        border: 1px solid #dbeafe;
-        border-radius: 14px;
-        padding: 1rem 1rem 0.9rem 1rem;
-        min-height: 135px;
-        box-shadow:
-            0 4px 16px rgba(15, 42, 67, 0.035);
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        padding: 1.15rem 1.2rem 0.6rem 1.2rem;
+        min-height: 130px;
+        box-shadow: var(--shadow-sm);
         transition:
-            transform 0.2s ease,
-            box-shadow 0.2s ease,
-            border-color 0.2s ease;
+            transform 0.25s ease,
+            box-shadow 0.25s ease,
+            border-color 0.25s ease;
     }
 
     .example-card:hover {
-        transform: translateY(-2px);
-        border-color: #bfdbfe;
-        box-shadow:
-            0 8px 22px rgba(37, 99, 235, 0.08);
+        transform: translateY(-3px);
+        border-color: var(--border-strong);
+        box-shadow: var(--shadow-md);
     }
 
     .example-icon {
-        color: #2563eb;
-        font-size: 1rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 34px;
+        height: 34px;
+        border-radius: 10px;
+        background: var(--accent-soft);
+        color: var(--accent-deep);
+        font-size: 0.82rem;
         font-weight: 800;
-        margin-bottom: 0.45rem;
+        margin-bottom: 0.7rem;
     }
 
     .example-title {
-        color: #17324d;
-        font-size: 0.92rem;
-        font-weight: 750;
+        color: var(--text);
+        font-size: 0.97rem;
+        font-weight: 700;
         margin-bottom: 0.3rem;
     }
 
     .example-description {
-        color: #64748b;
-        font-size: 0.78rem;
-        line-height: 1.45;
-        margin-bottom: 0.7rem;
+        color: var(--text-soft);
+        font-size: 0.84rem;
+        line-height: 1.5;
+        margin-bottom: 0.4rem;
     }
 
 
     /* ========================================================
-       Example Buttons
+       Buttons
        ======================================================== */
 
-    .example-button-container {
-        margin-top: -0.35rem;
+    /* Example "Explore" buttons -> soft text links */
+    [class*="st-key-example_"] button {
+        width: auto !important;
+        background: transparent !important;
+        color: var(--accent) !important;
+        border: none !important;
+        padding: 0.2rem 0.2rem !important;
+        font-size: 0.84rem;
+        font-weight: 700;
+        box-shadow: none !important;
+        margin-top: 0.1rem;
     }
 
-    .example-button-container .stButton > button {
-        width: auto;
-        background: transparent;
-        color: #2563eb;
-        border: none;
-        padding: 0;
-        font-size: 0.8rem;
-        font-weight: 750;
-        box-shadow: none;
+    [class*="st-key-example_"] button:hover {
+        background: transparent !important;
+        color: var(--accent-deep) !important;
+        transform: translateX(3px);
     }
 
-    .example-button-container .stButton > button:hover {
-        background: transparent;
-        color: #1d4ed8;
-        border: none;
-    }
-
-
-    /* ========================================================
-       Main Button
-       ======================================================== */
-
-    .stButton > button {
-        width: 100%;
-        border-radius: 10px;
-        background: #2563eb;
-        color: white;
+    /* Primary "Run Query" button */
+    button[data-testid="stBaseButton-primary"],
+    button[kind="primary"] {
+        min-width: 190px;
+        border-radius: 14px;
+        background: linear-gradient(135deg, #7f8cf3 0%, #6573ea 100%);
+        color: #ffffff;
         border: none;
         font-weight: 700;
-        padding: 0.65rem 1rem;
-        transition: 0.2s ease;
+        padding: 0.7rem 1.4rem;
+        box-shadow: 0 8px 20px rgba(101, 115, 234, 0.28);
+        transition: all 0.2s ease;
     }
 
-    .stButton > button:hover {
-        background: #1d4ed8;
+    button[data-testid="stBaseButton-primary"]:hover,
+    button[kind="primary"]:hover {
+        background: linear-gradient(135deg, #7482f0 0%, #5766e6 100%);
+        color: #ffffff;
         border: none;
-        color: white;
+        transform: translateY(-1px);
+        box-shadow: 0 12px 26px rgba(101, 115, 234, 0.34);
+    }
+
+    button[data-testid="stBaseButton-primary"]:active,
+    button[kind="primary"]:active {
+        transform: translateY(0);
     }
 
 
@@ -217,29 +287,27 @@ st.markdown(
        ======================================================== */
 
     .answer-card {
-        background: #ffffff;
-        border-left: 5px solid #2563eb;
-        border-top: 1px solid #dbeafe;
-        border-right: 1px solid #dbeafe;
-        border-bottom: 1px solid #dbeafe;
-        border-radius: 14px;
-        padding: 1.25rem 1.4rem;
-        margin-bottom: 1.2rem;
-        box-shadow:
-            0 5px 18px rgba(37, 99, 235, 0.05);
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-left: 5px solid var(--accent);
+        border-radius: 18px;
+        padding: 1.3rem 1.5rem;
+        margin-bottom: 1.3rem;
+        box-shadow: var(--shadow-md);
     }
 
     .answer-label {
-        color: #2563eb;
-        font-weight: 750;
-        font-size: 0.9rem;
-        margin-bottom: 0.35rem;
+        color: var(--accent);
+        font-weight: 700;
+        font-size: 0.78rem;
+        letter-spacing: 0.08em;
+        margin-bottom: 0.45rem;
     }
 
     .answer-text {
-        color: #17324d;
-        font-size: 1.05rem;
-        line-height: 1.65;
+        color: var(--text);
+        font-size: 1.03rem;
+        line-height: 1.7;
     }
 
 
@@ -248,26 +316,26 @@ st.markdown(
        ======================================================== */
 
     .metric-card {
-        background: #ffffff;
-        border: 1px solid #dbeafe;
-        border-radius: 15px;
-        padding: 1.1rem 1.2rem;
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        padding: 1.2rem 1.2rem;
         text-align: center;
-        box-shadow:
-            0 5px 18px rgba(15, 42, 67, 0.04);
+        box-shadow: var(--shadow-sm);
     }
 
     .metric-label {
-        color: #64748b;
-        font-size: 0.85rem;
+        color: var(--text-soft);
+        font-size: 0.82rem;
         font-weight: 600;
+        letter-spacing: 0.02em;
     }
 
     .metric-value {
-        color: #1d4ed8;
-        font-size: 1.45rem;
+        color: var(--accent-deep);
+        font-size: 1.5rem;
         font-weight: 800;
-        margin-top: 0.25rem;
+        margin-top: 0.3rem;
     }
 
 
@@ -276,55 +344,77 @@ st.markdown(
        ======================================================== */
 
     section[data-testid="stSidebar"] {
-        background: #ffffff;
-        border-right: 1px solid #dbeafe;
+        background: #fcfcff;
+        border-right: 1px solid var(--border);
     }
 
     .sidebar-brand {
-        font-size: 1.35rem;
+        font-size: 1.3rem;
         font-weight: 800;
-        color: #0f2a43;
+        letter-spacing: -0.01em;
+        color: var(--text);
         margin-bottom: 0.2rem;
     }
 
     .sidebar-subtitle {
-        color: #64748b;
+        color: var(--text-faint);
         font-size: 0.82rem;
-        margin-bottom: 1.5rem;
+        margin-bottom: 1.4rem;
     }
 
     .sidebar-card {
-        background: #f0f7ff;
-        border: 1px solid #dbeafe;
-        border-radius: 14px;
-        padding: 1rem;
+        background: var(--bg-soft);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 1rem 1.05rem;
         margin-bottom: 1rem;
     }
 
     .sidebar-card-title {
-        color: #1d4ed8;
-        font-weight: 750;
+        color: var(--accent-deep);
+        font-weight: 700;
+        font-size: 0.92rem;
         margin-bottom: 0.45rem;
     }
 
     .sidebar-item {
-        color: #475569;
-        font-size: 0.88rem;
-        margin: 0.45rem 0;
+        color: var(--text-soft);
+        font-size: 0.86rem;
+        margin: 0.4rem 0;
     }
 
 
     /* ========================================================
-       Code
+       Code / Dataframe / Chart
        ======================================================== */
 
     pre {
-        border-radius: 12px !important;
+        border-radius: 14px !important;
+        border: 1px solid var(--border) !important;
+    }
+
+    div[data-testid="stDataFrame"] {
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        overflow: hidden;
+        box-shadow: var(--shadow-sm);
+    }
+
+    div[data-testid="stPlotlyChart"] {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        padding: 0.6rem;
+        box-shadow: var(--shadow-sm);
+    }
+
+    div[data-testid="stAlert"] {
+        border-radius: 14px;
     }
 
 
     /* ========================================================
-       Streamlit Branding
+       Streamlit Chrome
        ======================================================== */
 
     #MainMenu {
@@ -335,8 +425,12 @@ st.markdown(
         visibility: hidden;
     }
 
+    /* Frosted header so toolbar icons never collide with content */
+    header[data-testid="stHeader"],
     header {
-        background: transparent !important;
+        background: rgba(248, 248, 253, 0.78) !important;
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
     }
 
     </style>
@@ -368,6 +462,45 @@ def set_example(query):
     the widget has already been instantiated.
     """
     st.session_state.question_input = query
+
+
+def style_chart(fig):
+    """
+    Give Plotly charts the same calm, light look as the rest of the UI.
+    Falls back silently if the figure doesn't support it.
+    """
+    try:
+        fig.update_layout(
+            colorway=CHART_COLORWAY,
+            paper_bgcolor="rgba(0,0,0,0)",
+            plot_bgcolor="rgba(0,0,0,0)",
+            font=dict(
+                family="Inter, sans-serif",
+                color="#4a5070",
+            ),
+            title_font=dict(
+                size=16,
+                color="#2b2f45",
+            ),
+            margin=dict(l=20, r=20, t=60, b=20),
+        )
+        fig.update_xaxes(
+            gridcolor="#eceefa",
+            linecolor="#e1e4f5",
+            zeroline=False,
+        )
+        fig.update_yaxes(
+            gridcolor="#eceefa",
+            linecolor="#e1e4f5",
+            zeroline=False,
+        )
+        fig.update_traces(
+            marker_line_width=0,
+            selector=dict(type="bar"),
+        )
+    except Exception:
+        pass
+    return fig
 
 
 # ============================================================
@@ -466,7 +599,7 @@ with st.sidebar:
     )
 
     st.markdown(
-        "<small>Built with Python · LangGraph · Gemini · Groq · SQLite · Plotly</small>",
+        "<small style='color:#9aa0bd'>Built with Python · LangGraph · Gemini · Groq · SQLite · Plotly</small>",
         unsafe_allow_html=True,
     )
 
@@ -583,11 +716,6 @@ for col, (number, title, description, query) in zip(
             unsafe_allow_html=True,
         )
 
-        st.markdown(
-            '<div class="example-button-container">',
-            unsafe_allow_html=True,
-        )
-
         st.button(
             "Explore →",
             key=f"example_{number}",
@@ -595,15 +723,12 @@ for col, (number, title, description, query) in zip(
             args=(query,),
         )
 
-        st.markdown(
-            "</div>",
-            unsafe_allow_html=True,
-        )
-
 
 # ============================================================
 # Run Query
 # ============================================================
+
+st.write("")
 
 if st.button(
     "Run Query  →",
@@ -771,7 +896,7 @@ if st.button(
                 )
 
                 st.plotly_chart(
-                    result["chart"],
+                    style_chart(result["chart"]),
                     use_container_width=True,
                 )
 
@@ -801,8 +926,8 @@ st.markdown(
         text-align:center;
         margin-top:3rem;
         padding-top:1.5rem;
-        border-top:1px solid #dbeafe;
-        color:#94a3b8;
+        border-top:1px solid #e9ebf7;
+        color:#9aa0bd;
         font-size:0.8rem;
     ">
         SQLAgent AI · Autonomous Text-to-SQL Analytics Agent
