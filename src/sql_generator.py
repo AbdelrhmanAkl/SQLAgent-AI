@@ -3,6 +3,7 @@ import os
 import streamlit as st
 from dotenv import load_dotenv
 from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_groq import ChatGroq
 
 
 load_dotenv()
@@ -12,25 +13,51 @@ class SQLGenerator:
     """Generate and correct safe read-only SQL queries."""
 
     def __init__(self):
-        api_key = os.getenv("GOOGLE_API_KEY")
+        provider = os.getenv("LLM_PROVIDER", "gemini").lower().strip()
 
-        if not api_key:
-            try:
-                api_key = st.secrets.get("GOOGLE_API_KEY")
-            except Exception:
-                api_key = None
+        if provider == "groq":
+            api_key = os.getenv("GROQ_API_KEY")
 
-        if not api_key:
-            raise ValueError(
-                "GOOGLE_API_KEY was not found in environment variables "
-                "or Streamlit Secrets."
+            if not api_key:
+                try:
+                    api_key = st.secrets.get("GROQ_API_KEY")
+                except Exception:
+                    api_key = None
+
+            if not api_key:
+                raise ValueError(
+                    "GROQ_API_KEY was not found in environment variables "
+                    "or Streamlit Secrets."
+                )
+
+            self.provider = "groq"
+            self.llm = ChatGroq(
+                model="openai/gpt-oss-120b",
+                temperature=0,
+                groq_api_key=api_key,
             )
 
-        self.llm = ChatGoogleGenerativeAI(
-            model="gemini-3.7-flash",
-            temperature=0,
-            google_api_key=api_key,
-        )
+        else:
+            api_key = os.getenv("GOOGLE_API_KEY")
+
+            if not api_key:
+                try:
+                    api_key = st.secrets.get("GOOGLE_API_KEY")
+                except Exception:
+                    api_key = None
+
+            if not api_key:
+                raise ValueError(
+                    "GOOGLE_API_KEY was not found in environment variables "
+                    "or Streamlit Secrets."
+                )
+
+            self.provider = "gemini"
+            self.llm = ChatGoogleGenerativeAI(
+                model="gemini-3.7-flash",
+                temperature=0,
+                google_api_key=api_key,
+            )
 
     def _extract_text(self, response) -> str:
         content = response.content
@@ -68,6 +95,12 @@ class SQLGenerator:
             or "429" in error_message
             or "quota" in error_message.lower()
         ):
+            if self.provider == "groq":
+                raise RuntimeError(
+                    "Groq API rate limit or quota was reached. "
+                    "Please wait and try again."
+                ) from exc
+
             raise RuntimeError(
                 "Gemini API quota has been exhausted. "
                 "Please wait for the quota to reset or use an "
