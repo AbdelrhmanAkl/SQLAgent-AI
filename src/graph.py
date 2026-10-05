@@ -1,4 +1,4 @@
-from pathlib import Path
+﻿from pathlib import Path
 from typing import TypedDict
 
 from langgraph.graph import StateGraph, START, END
@@ -24,14 +24,16 @@ class SQLAgentState(TypedDict):
 class SQLAgentGraph:
     """Autonomous LangGraph Text-to-SQL analytics agent."""
 
-    # Maximum total SQL attempts:
-    # 1 initial generation + 1 correction
     MAX_RETRIES = 2
 
-    def __init__(self, db_path: str = "database/chinook.db"):
+    def __init__(
+        self,
+        db_path: str = "database/chinook.db",
+        provider: str | None = None,
+    ):
         self.db = ReadOnlyDatabase(Path(db_path))
-        self.generator = SQLGenerator()
-        self.summarizer = ResultSummarizer()
+        self.generator = SQLGenerator(provider=provider)
+        self.summarizer = ResultSummarizer(provider=provider)
         self.chart_tool = ChartTool()
 
         graph = StateGraph(SQLAgentState)
@@ -88,27 +90,23 @@ class SQLAgentGraph:
         except Exception as exc:
             error_message = str(exc)
 
-            # Preserve API/quota errors so they can be shown clearly.
             return {
                 "result": [],
                 "error": error_message,
             }
 
     def check_result(self, state):
-        # SQL executed successfully
         if not state["error"]:
             return "success"
 
-        # Do not retry after the maximum number of SQL attempts.
         if state["attempts"] >= self.MAX_RETRIES:
             return "failed"
 
-        # Only execution errors trigger SQL correction.
         return "retry"
 
     def correct_sql(self, state):
         print(
-            f"⚠ SQL attempt {state['attempts']} failed: "
+            f"SQL attempt {state['attempts']} failed: "
             f"{state['error']}"
         )
 

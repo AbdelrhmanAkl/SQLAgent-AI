@@ -12,52 +12,88 @@ load_dotenv()
 class SQLGenerator:
     """Generate and correct safe read-only SQL queries."""
 
-    def __init__(self):
-        provider = os.getenv("LLM_PROVIDER", "gemini").lower().strip()
+    def __init__(self, provider: str | None = None):
+        provider = (
+            provider
+            or os.getenv("LLM_PROVIDER", "groq")
+        ).lower().strip()
 
+        if provider not in {"gemini", "groq"}:
+            raise ValueError(
+                "Unsupported LLM provider. Choose 'gemini' or 'groq'."
+            )
+
+        self.provider = provider
+        self.primary_provider = provider
+        self.fallback_provider = (
+            "gemini" if provider == "groq" else "groq"
+        )
+        self.active_provider = provider
+
+        self.llm = self._create_llm(provider)
+
+    def _get_api_key(self, provider: str):
         if provider == "groq":
-            api_key = os.getenv("GROQ_API_KEY")
+            env_key = "GROQ_API_KEY"
+        else:
+            env_key = "GOOGLE_API_KEY"
 
-            if not api_key:
-                try:
-                    api_key = st.secrets.get("GROQ_API_KEY")
-                except Exception:
-                    api_key = None
+        api_key = os.getenv(env_key)
 
-            if not api_key:
-                raise ValueError(
-                    "GROQ_API_KEY was not found in environment variables "
-                    "or Streamlit Secrets."
-                )
+        if not api_key:
+            try:
+                api_key = st.secrets.get(env_key)
+            except Exception:
+                api_key = None
 
-            self.provider = "groq"
-            self.llm = ChatGroq(
+        if not api_key:
+            raise ValueError(
+                f"{env_key} was not found in environment variables "
+                "or Streamlit Secrets."
+            )
+
+        return api_key
+
+    def _create_llm(self, provider: str):
+        if provider == "groq":
+            api_key = self._get_api_key("groq")
+
+            return ChatGroq(
                 model="openai/gpt-oss-120b",
                 temperature=0,
                 groq_api_key=api_key,
             )
 
-        else:
-            api_key = os.getenv("GOOGLE_API_KEY")
+        api_key = self._get_api_key("gemini")
 
-            if not api_key:
-                try:
-                    api_key = st.secrets.get("GOOGLE_API_KEY")
-                except Exception:
-                    api_key = None
+        return ChatGoogleGenerativeAI(
+            model="gemini-3.7-flash",
+            temperature=0,
+            google_api_key=api_key,
+        )
 
-            if not api_key:
-                raise ValueError(
-                    "GOOGLE_API_KEY was not found in environment variables "
-                    "or Streamlit Secrets."
-                )
+    def _invoke_with_fallback(self, prompt: str):
+        try:
+            self.active_provider = self.primary_provider
+            return self.llm.invoke(prompt)
 
-            self.provider = "gemini"
-            self.llm = ChatGoogleGenerativeAI(
-                model="gemini-3.7-flash",
-                temperature=0,
-                google_api_key=api_key,
-            )
+        except Exception as primary_error:
+            fallback_provider = self.fallback_provider
+
+            try:
+                fallback_llm = self._create_llm(fallback_provider)
+
+                self.active_provider = fallback_provider
+
+                return fallback_llm.invoke(prompt)
+
+            except Exception as fallback_error:
+                raise RuntimeError(
+                    f"Primary provider '{self.primary_provider}' failed: "
+                    f"{primary_error}. "
+                    f"Fallback provider '{fallback_provider}' also failed: "
+                    f"{fallback_error}"
+                ) from fallback_error
 
     def _extract_text(self, response) -> str:
         content = response.content
@@ -87,28 +123,6 @@ class SQLGenerator:
 
         return sql
 
-    def _handle_llm_error(self, exc):
-        error_message = str(exc)
-
-        if (
-            "RESOURCE_EXHAUSTED" in error_message
-            or "429" in error_message
-            or "quota" in error_message.lower()
-        ):
-            if self.provider == "groq":
-                raise RuntimeError(
-                    "Groq API rate limit or quota was reached. "
-                    "Please wait and try again."
-                ) from exc
-
-            raise RuntimeError(
-                "Gemini API quota has been exhausted. "
-                "Please wait for the quota to reset or use an "
-                "available Gemini API plan/model."
-            ) from exc
-
-        raise exc
-
     def generate_sql(self, question: str, schema: str) -> str:
         prompt = f"""
 You are an expert SQLite Text-to-SQL system.
@@ -132,10 +146,7 @@ STRICT RULES:
 7. Do not include explanations.
 """
 
-        try:
-            response = self.llm.invoke(prompt)
-        except Exception as exc:
-            self._handle_llm_error(exc)
+        response = self._invoke_with_fallback(prompt)
 
         return self._clean_sql(
             self._extract_text(response)
@@ -179,10 +190,7 @@ STRICT RULES:
 8. Do not include explanations.
 """
 
-        try:
-            response = self.llm.invoke(prompt)
-        except Exception as exc:
-            self._handle_llm_error(exc)
+        response = self._invoke_with_fallback(prompt)
 
         return self._clean_sql(
             self._extract_text(response)

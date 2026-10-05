@@ -444,11 +444,21 @@ st.markdown(
 # ============================================================
 
 @st.cache_resource
-def load_agent():
-    return SQLAgentGraph()
+def load_agent(provider="groq"):
+    return SQLAgentGraph(provider=provider)
 
 
-agent = load_agent()
+# Groq is the primary provider.
+# Gemini is automatically used as a fallback by the backend.
+provider = "groq"
+
+st.sidebar.markdown("### LLM Provider")
+st.sidebar.info(
+    "Primary: Groq\n\n"
+    "Automatic fallback: Gemini"
+)
+
+agent = load_agent(provider)
 
 
 # ============================================================
