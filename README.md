@@ -1,154 +1,198 @@
-# ◈ SQLAgent AI
+# SQLAgent AI
 
 ### Autonomous Text-to-SQL Analytics Agent
 
-**SQLAgent AI** is an AI-powered analytics agent that allows users to interact with a relational database using natural language.
+**SQLAgent AI** is an end-to-end AI analytics application that allows users to interact with a relational database using natural language.
 
-Instead of manually writing SQL queries, users can simply ask questions such as:
+Instead of manually writing SQL queries, users can ask questions such as:
 
-> **"How many customers are there?"**
+> How many customers are there?
 
-> **"Show me the top 10 customers by total spending."**
+> Show me the top 10 customers by total spending.
 
-> **"Show me the total revenue by country."**
+> Show me the total revenue by country.
 
-The agent uses **Gemini and LangGraph** to transform natural-language questions into SQL, execute queries safely against a read-only SQLite database, recover from SQL execution errors, summarize the results, and generate visualizations when useful.
+The system translates natural-language questions into SQL, validates and safely executes the generated queries against a read-only SQLite database, recovers from SQL execution errors through a controlled correction workflow, summarizes the results, and generates visualizations when useful.
+
+SQLAgent AI supports **multiple LLM providers — Google Gemini and Groq — through configuration**, allowing the underlying provider to be changed without changing the application workflow.
 
 ---
 
-## 🚀 Live Demo
+## Live Demo
 
-### 🌐 Try SQLAgent AI
+### Try SQLAgent AI
 
 **https://sqlagent-ai.streamlit.app/**
 
-> Ask a question. Let the agent handle the SQL.
+> Ask your database. Let the agent handle the SQL.
 
-### 💻 Source Code
+### Source Code
 
 **https://github.com/AbdelrhmanAkl/SQLAgent-AI**
 
 ---
 
-## 🎯 What This Project Demonstrates
+## What This Project Demonstrates
 
-SQLAgent AI combines several modern AI engineering concepts into a single end-to-end application:
+SQLAgent AI combines LLMs, agentic workflow orchestration, relational databases, SQL validation, error recovery, and data visualization into a single application.
 
-* Natural Language → SQL
-* LLM-powered SQL generation
-* Agentic workflow orchestration
-* LangGraph state management
-* SQL validation
-* Read-only database execution
-* Error-driven SQL self-correction
-* AI-powered result summarization
-* Automatic data visualization
-* Streamlit deployment
-* Secure API key management
+### Core capabilities
 
-The goal is not simply to generate SQL, but to build a **controlled autonomous analytics workflow** around an LLM.
+- Natural Language → SQL
+- LLM-powered SQL generation
+- Multi-provider LLM architecture
+- LangGraph workflow orchestration
+- Schema-aware SQL generation
+- SQL validation
+- Read-only database execution
+- Error-driven SQL self-correction
+- Controlled retry logic
+- AI-powered result summarization
+- Automatic visualization
+- Streamlit deployment
+- Secure API key management
+- Automated testing
+
+The objective is not simply to generate SQL.
+
+It is to build a **controlled analytics workflow around an LLM**, where SQL generation, validation, execution, error recovery, summarization, and visualization are explicitly separated.
 
 ---
 
-# ✨ Key Features
+# Key Features
 
-## 💬 Natural Language Database Queries
+## 1. Natural Language Database Queries
 
-Users can interact with the database using natural language.
+Users can query the relational database without manually writing SQL.
+
+For example:
 
 ```text
 Show me the top 10 customers by total spending
 ```
 
-The agent automatically determines the required tables, relationships, aggregations, filtering, and ordering.
+The agent uses the available database schema to determine the required tables, relationships, aggregations, ordering, and limits.
 
 ---
 
-## 🤖 Autonomous Agent Workflow
+## 2. Multi-Provider LLM Support
+
+SQLAgent AI supports multiple LLM providers through the `LLM_PROVIDER` configuration.
+
+| Provider | Configuration |
+|---|---|
+| Google Gemini | `LLM_PROVIDER=gemini` |
+| Groq | `LLM_PROVIDER=groq` |
+
+The provider can be changed without modifying the main application workflow.
+
+For example:
+
+```env
+LLM_PROVIDER=gemini
+```
+
+or:
+
+```env
+LLM_PROVIDER=groq
+```
+
+This separates the application workflow from the underlying LLM provider.
+
+---
+
+# Agent Workflow
 
 The application is orchestrated using **LangGraph**.
 
 ```text
 User Question
-      │
-      ▼
+      |
+      v
 Schema Inspection
-      │
-      ▼
+      |
+      v
 SQL Generation
-      │
-      ▼
+      |
+      v
 SQL Validation
-      │
-      ▼
+      |
+      v
 Read-Only Execution
-      │
-      ├─────────────── Success ───────────────┐
-      │                                       │
-      │                                       ▼
-      │                              Result Summarization
-      │                                       │
-      │                                       ▼
-      │                              Visualization Check
-      │                                       │
-      │                                       ▼
-      │                                 Final Response
-      │
-      └────────────── Error
-                      │
-                      ▼
-                SQL Correction
-                      │
-                      ▼
-                   Retry
+      |
+      +---------------- Success ----------------+
+      |                                         |
+      |                                         v
+      |                                Result Summarization
+      |                                         |
+      |                                         v
+      |                                Visualization Check
+      |                                         |
+      |                                         v
+      |                                  Final Response
+      |
+      +---------------- Error ------------------+
+                        |
+                        v
+                  SQL Correction
+                        |
+                        v
+                      Retry
 ```
 
-This makes the system more robust than a simple one-shot Text-to-SQL pipeline.
+The workflow provides explicit control over the agent's execution path rather than relying on an uncontrolled LLM loop.
 
 ---
 
-# 🔄 SQL Self-Correction
+# SQL Self-Correction
 
-SQLAgent AI can use database execution errors as feedback.
+SQLAgent AI uses database execution errors as feedback.
 
-When a generated query fails:
+When a generated query fails, the workflow sends the relevant information to a dedicated SQL correction stage.
 
 ```text
 Generated SQL
-      ↓
+      |
+      v
 Database Execution
-      ↓
+      |
+      v
 Execution Error
-      ↓
-Error + Previous SQL
-      ↓
-Gemini SQL Correction
-      ↓
+      |
+      v
+Previous SQL + Error
+      |
+      v
+SQL Correction Agent
+      |
+      v
 Corrected SQL
-      ↓
+      |
+      v
 Database Execution
 ```
 
-The retry process is controlled to prevent infinite execution loops.
+The correction stage receives:
 
-### Current retry policy
+- Original user question
+- Database schema
+- Previous SQL query
+- Database execution error
 
-```text
-Maximum SQL attempts: 2
-```
+It then generates a corrected SQL query.
 
-This means the agent can perform:
+### Retry Policy
 
-```text
-Attempt 1 → Initial SQL
-Attempt 2 → Corrected SQL
-```
+**Maximum SQL attempts: 2**
+
+This provides controlled error recovery while preventing an infinite execution loop.
 
 ---
 
-# 🔐 Read-Only SQL Execution
+# Read-Only SQL Execution
 
-Because the application connects an LLM to a database, safe query execution is a core design requirement.
+Connecting an LLM directly to a database requires execution controls.
 
 SQLAgent AI restricts generated queries to read-oriented operations.
 
@@ -177,54 +221,57 @@ ATTACH
 DETACH
 ```
 
-This keeps the application focused on **analytics and database exploration** rather than database modification.
+The application is therefore focused on database analytics and exploration rather than database modification.
+
+> These controls are appropriate for the portfolio application demonstrated here. A production system should use additional database-level permissions and security controls.
 
 ---
 
-# 🧠 AI-Powered Result Summarization
+# AI-Powered Result Summarization
 
-The raw database result is passed to a dedicated summarization stage.
+After successful SQL execution, the returned data is passed to a dedicated summarization stage.
 
 For example:
 
+### User
+
 ```text
-User:
 How many customers are there?
 ```
 
-Generated SQL:
+### Generated SQL
 
 ```sql
 SELECT COUNT(*) FROM Customer;
 ```
 
-Database result:
+### Database Result
 
 ```text
 59
 ```
 
-Final response:
+### Final Response
 
 ```text
 There are 59 customers.
 ```
 
-The summarizer is instructed to use only information contained in the SQL result and avoid inventing facts.
+The summarization stage is instructed to use information contained in the SQL result and avoid introducing unsupported facts.
 
 ---
 
-# 📊 Automatic Visualization
+# Automatic Visualization
 
-SQLAgent AI analyzes the returned dataset and determines whether a visualization would be useful.
+SQLAgent AI analyzes returned datasets and determines whether visualization is useful.
 
-For analytical queries such as:
+For example:
 
 ```text
 Show me the total revenue by country
 ```
 
-the system can generate a Plotly visualization from the returned data.
+can produce a structured dataset suitable for visualization.
 
 For simple scalar queries such as:
 
@@ -232,74 +279,78 @@ For simple scalar queries such as:
 How many customers are there?
 ```
 
-the application returns the answer without creating an unnecessary chart.
+the application avoids creating an unnecessary chart.
+
+Visualization is implemented using **Plotly**.
 
 ---
 
-# 🗄️ Database
+# Database
 
-The project uses the **SQLite Chinook database**, a relational sample database representing a digital music store.
+SQLAgent AI uses the **SQLite Chinook database**, a relational sample database representing a digital music store.
 
-The database contains tables representing entities such as:
+The database contains entities including:
 
-```text
-Customer
-Invoice
-InvoiceLine
-Artist
-Album
-Track
-Genre
-Employee
-Playlist
-PlaylistTrack
-MediaType
-```
+- Customer
+- Invoice
+- InvoiceLine
+- Artist
+- Album
+- Track
+- Genre
+- Employee
+- Playlist
+- PlaylistTrack
+- MediaType
 
-This provides a realistic relational environment for demonstrating:
+This provides a relational environment for demonstrating:
 
-* SQL generation
-* JOIN operations
-* Aggregations
-* GROUP BY
-* ORDER BY
-* Filtering
-* Ranking
-* Revenue analytics
-* Customer analytics
-* Music analytics
+- SQL generation
+- JOIN operations
+- Aggregations
+- GROUP BY
+- ORDER BY
+- Filtering
+- Ranking
+- Revenue analytics
+- Customer analytics
+- Music analytics
 
 ---
 
-# 💡 Example Queries
+# Example Queries
 
 ## 01 — Customer Analytics
+
+### Question
 
 ```text
 How many customers are there?
 ```
 
-Result:
-
-```text
-There are 59 customers.
-```
-
-Generated SQL:
+### Generated SQL
 
 ```sql
 SELECT COUNT(*) FROM Customer;
+```
+
+### Example Result
+
+```text
+There are 59 customers.
 ```
 
 ---
 
 ## 02 — Customer Spending
 
+### Question
+
 ```text
 Show me the top 10 customers by total spending
 ```
 
-Example generated SQL:
+### Example Generated SQL
 
 ```sql
 SELECT
@@ -322,11 +373,13 @@ LIMIT 10;
 
 ## 03 — Revenue Analytics
 
+### Question
+
 ```text
 Show me the total revenue by country
 ```
 
-Example generated SQL:
+### Example Generated SQL
 
 ```sql
 SELECT
@@ -342,121 +395,164 @@ The resulting dataset can be visualized automatically.
 
 ## 04 — Music Analytics
 
+### Question
+
 ```text
 Show me the most popular genres
 ```
 
-The agent determines the necessary tables and SQL operations from the available database schema.
+The agent determines the required tables and SQL operations from the available database schema.
 
 ---
 
-# 🏗️ Architecture
+# Architecture
 
 ```text
-┌──────────────────────────────┐
-│            User              │
-│     Natural Language Query   │
-└──────────────┬───────────────┘
-               │
-               ▼
-┌──────────────────────────────┐
-│        SQLAgent AI           │
-│          LangGraph           │
-└──────────────┬───────────────┘
-               │
-       ┌───────┴────────┐
-       │                │
-       ▼                ▼
-┌─────────────┐  ┌─────────────────┐
-│   SQLite    │  │     Gemini      │
-│   Schema    │  │ SQL Generation  │
-└──────┬──────┘  └────────┬────────┘
-       │                  │
-       └────────┬─────────┘
-                ▼
-       ┌──────────────────┐
-       │ SQL Validation   │
-       │ & Safe Execution │
-       └────────┬─────────┘
-                │
-         ┌──────┴──────┐
-         │             │
-      Success         Error
-         │             │
-         ▼             ▼
-┌──────────────┐ ┌──────────────┐
-│ Summarization│ │ SQL Correction│
-└──────┬───────┘ └──────┬───────┘
-       │                │
-       │                └───────┐
-       ▼                        │
-┌──────────────┐                │
-│ Visualization│                │
-└──────┬───────┘                │
-       │                        │
-       └───────────┬────────────┘
-                   ▼
-          ┌─────────────────┐
-          │ Final Response  │
-          │ Answer + SQL +  │
-          │ Results + Chart │
-          └─────────────────┘
+                         +----------------------+
+                         |        User          |
+                         | Natural Language     |
+                         |       Query          |
+                         +----------+-----------+
+                                    |
+                                    v
+                         +----------------------+
+                         |     SQLAgent AI      |
+                         |       LangGraph      |
+                         +----------+-----------+
+                                    |
+                    +---------------+---------------+
+                    |                               |
+                    v                               v
+          +------------------+             +----------------------+
+          | SQLite Database  |             | Multi-Provider LLM  |
+          | Schema & Data    |             | Gemini / Groq        |
+          +--------+---------+             +----------+-----------+
+                   |                                  |
+                   +---------------+------------------+
+                                   |
+                                   v
+                         +----------------------+
+                         | SQL Validation &     |
+                         | Safe Execution       |
+                         +----------+-----------+
+                                    |
+                         +----------+----------+
+                         |                     |
+                      Success                 Error
+                         |                     |
+                         v                     v
+                +----------------+    +----------------+
+                | Result         |    | SQL Correction|
+                | Summarization  |    | Agent         |
+                +-------+--------+    +-------+--------+
+                        |                     |
+                        v                     |
+                +----------------+            |
+                | Visualization  |            |
+                | Decision       |            |
+                +-------+--------+            |
+                        |                     |
+                        +----------+----------+
+                                   |
+                                   v
+                         +----------------------+
+                         |   Final Response     |
+                         | Answer + SQL + Data  |
+                         | + Visualization      |
+                         +----------------------+
 ```
 
 ---
 
-# 🧩 LangGraph Workflow
+# LangGraph Workflow
 
 The agent is implemented as a stateful graph.
 
-### Nodes
+### Core Nodes
 
 ```text
 generate_sql
-      ↓
+     |
+     v
 execute_sql
-      ↓
-correct_sql
-      ↓
-summarize_result
-      ↓
-prepare_chart
+     |
+     +------ success ------> summarize_result
+     |                              |
+     |                              v
+     |                       prepare_chart
+     |
+     +------ error --------> correct_sql
+                                    |
+                                    v
+                                  retry
 ```
 
-### Conditional execution
+### Conditional Execution
 
 ```text
 execute_sql
-     │
-     ├── success → summarize_result
-     │
-     ├── error   → correct_sql
-     │
-     └── max retries → end
+    |
+    +---- success ------> summarize_result
+    |
+    +---- error --------> correct_sql
+    |
+    +---- max retries --> end
 ```
 
-This structure provides explicit control over the agent's execution flow instead of relying on an uncontrolled LLM loop.
+This explicit graph structure provides controlled execution and retry behavior.
 
 ---
 
-# 🛠️ Tech Stack
+# Multi-Provider Design
 
-| Technology        | Role                                       |
-| ----------------- | ------------------------------------------ |
-| **Python**        | Core development                           |
-| **Streamlit**     | Interactive web application                |
-| **LangGraph**     | Agent workflow orchestration               |
-| **LangChain**     | LLM integration                            |
-| **Gemini**        | SQL generation, correction & summarization |
-| **SQLite**        | Relational database                        |
-| **SQLGlot**       | SQL validation                             |
-| **Pandas**        | Data processing                            |
-| **Plotly**        | Interactive visualization                  |
-| **python-dotenv** | Local environment configuration            |
+LLM integration is isolated from the rest of the application.
+
+The SQL generation and result summarization layers select the provider based on:
+
+```env
+LLM_PROVIDER
+```
+
+## Gemini
+
+```env
+LLM_PROVIDER=gemini
+GOOGLE_API_KEY=your_gemini_api_key
+```
+
+## Groq
+
+```env
+LLM_PROVIDER=groq
+GROQ_API_KEY=your_groq_api_key
+```
+
+Only configure the provider you intend to use locally.
+
+The application also supports **Streamlit Secrets**, allowing the same codebase to be deployed without exposing API keys in the repository.
 
 ---
 
-# 📁 Project Structure
+# Tech Stack
+
+| Technology | Role |
+|---|---|
+| Python | Core development |
+| Streamlit | Interactive web application |
+| LangGraph | Agent workflow orchestration |
+| LangChain | LLM integration |
+| Google Gemini | SQL generation, correction, and summarization |
+| Groq | Alternative LLM provider |
+| SQLite | Relational database |
+| SQLGlot | SQL parsing and validation |
+| Pandas | Data processing |
+| Plotly | Interactive visualization |
+| python-dotenv | Local environment configuration |
+| Pytest | Automated testing |
+
+---
+
+# Project Structure
 
 ```text
 SQLAgent-AI/
@@ -475,10 +571,9 @@ SQLAgent-AI/
 │   └── chart_tool.py
 │
 ├── tests/
-│
-├── test_database.py
-├── test_gemini.py
-├── test_sql_generator.py
+│   ├── test_database.py
+│   ├── test_gemini.py
+│   └── test_sql_generator.py
 │
 ├── requirements.txt
 ├── .gitignore
@@ -487,16 +582,16 @@ SQLAgent-AI/
 
 ---
 
-# ⚙️ Run Locally
+# Installation
 
-## 1. Clone the repository
+## 1. Clone the Repository
 
 ```bash
 git clone https://github.com/AbdelrhmanAkl/SQLAgent-AI.git
 cd SQLAgent-AI
 ```
 
-## 2. Create a virtual environment
+## 2. Create a Virtual Environment
 
 ### Windows
 
@@ -510,136 +605,201 @@ Activate it:
 .venv\Scripts\activate
 ```
 
----
+## 3. Install Dependencies
 
-## 3. Install dependencies
-
-```powershell
+```bash
 pip install -r requirements.txt
 ```
 
 ---
 
-## 4. Configure Gemini
+# Configuration
 
-Create a `.env` file in the project root:
+Create a `.env` file in the project root.
+
+## Option 1 — Gemini
 
 ```env
+LLM_PROVIDER=gemini
 GOOGLE_API_KEY=your_gemini_api_key
 ```
 
-For Streamlit Cloud, configure the API key through **Streamlit Secrets** instead of committing it to the repository.
+## Option 2 — Groq
+
+```env
+LLM_PROVIDER=groq
+GROQ_API_KEY=your_groq_api_key
+```
+
+Only configure the provider you intend to use locally.
+
+### Security
+
+Never commit `.env` files or API keys to GitHub.
+
+The repository excludes `.env` through `.gitignore`.
 
 ---
 
-## 5. Launch the application
+# Run Locally
 
-```powershell
+Start the Streamlit application:
+
+```bash
 streamlit run app.py
 ```
 
+Then open the local Streamlit URL displayed in the terminal.
+
 ---
 
-# ☁️ Deployment
+# Streamlit Cloud Deployment
 
 SQLAgent AI is deployed using **Streamlit Community Cloud**.
 
-### Production application
+### Production Application
 
 https://sqlagent-ai.streamlit.app/
 
-The deployed application uses Streamlit Secrets for secure API-key configuration.
+For deployment, configure the required secrets through Streamlit's Secrets manager.
 
-The Gemini API key is **not stored in the GitHub repository**.
+### Gemini
+
+```toml
+LLM_PROVIDER = "gemini"
+GOOGLE_API_KEY = "your_gemini_api_key"
+```
+
+### Groq
+
+```toml
+LLM_PROVIDER = "groq"
+GROQ_API_KEY = "your_groq_api_key"
+```
+
+The application supports both environment variables and Streamlit Secrets.
+
+API keys are not stored in the GitHub repository.
 
 ---
 
-# 🧪 Validation
+# Testing
 
-The core application workflow has been tested locally and through the deployed Streamlit application.
+The project includes automated tests covering database and SQL-generation-related functionality.
 
-A successful production query:
+Run the complete test suite:
+
+```bash
+python -m pytest -q
+```
+
+### Current Local Validation
 
 ```text
-Question:
-How many customers are there?
-
-Answer:
-There are 59 customers.
-
-SQL Attempts:
-1
-
-Visualization:
-Not needed
-
-Rows Returned:
-1
+10 passed
 ```
 
-Generated SQL:
-
-```sql
-SELECT COUNT(*) FROM Customer;
-```
-
-This validates the complete path:
-
-```text
-Natural Language
-      ↓
-Gemini
-      ↓
-SQL Generation
-      ↓
-Safe SQLite Execution
-      ↓
-Result Summarization
-      ↓
-Streamlit Response
-```
+The test suite verifies core application behavior and SQL-related functionality.
 
 ---
 
-# 🔒 Security Considerations
+# Security Considerations
 
-This project demonstrates a controlled architecture for connecting an LLM to a relational database.
+SQLAgent AI demonstrates a controlled architecture for connecting an LLM to a relational database.
 
 Current protections include:
 
-* Read-only SQL policy
-* Restricted SQL operations
-* Controlled retry count
-* API key exclusion from Git
-* Streamlit Secrets for cloud deployment
-* Schema-aware SQL generation
+- Read-only SQL policy
+- Restricted SQL operations
+- Schema-aware SQL generation
+- Controlled retry count
+- API key exclusion from Git
+- Environment-based configuration
+- Streamlit Secrets support
+- SQL parsing and validation
 
-> **Note:** This is a portfolio-grade analytics agent and should be further hardened before being connected to sensitive production databases.
+### Production Hardening
 
----
+The current implementation is a portfolio application.
 
-# 🚀 Future Improvements
+A production deployment should additionally consider:
 
-Planned directions include:
-
-* Multi-database support
-* PostgreSQL integration
-* MySQL integration
-* Conversation memory
-* Multi-turn analytics
-* Query history
-* User authentication
-* Role-based database permissions
-* Advanced SQL validation
-* Query cost estimation
-* Streaming agent execution
-* Improved chart selection
-* Observability and tracing
-* Production database connectors
+- Database-level permissions
+- Query timeouts
+- Resource limits
+- Authentication
+- Auditing
+- Monitoring
+- Stronger SQL security controls
 
 ---
 
-# 💼 Why SQLAgent AI?
+# Engineering Highlights
+
+## Controlled Agent Execution
+
+LangGraph explicitly controls workflow transitions and retry behavior.
+
+## Provider Abstraction
+
+Gemini and Groq can be selected through configuration without changing the application workflow.
+
+## Error-Driven Recovery
+
+Database execution errors are fed back into the SQL correction stage.
+
+## Database Safety
+
+Generated SQL is restricted to read-oriented operations.
+
+## Separation of Concerns
+
+The system separates major responsibilities:
+
+```text
+Database Access
+      |
+SQL Generation
+      |
+SQL Validation
+      |
+Agent Orchestration
+      |
+Result Summarization
+      |
+Visualization
+```
+
+This structure makes the application easier to understand, maintain, and extend.
+
+---
+
+# Future Improvements
+
+Potential future directions include:
+
+- Multi-database support
+- PostgreSQL integration
+- MySQL integration
+- Conversation memory
+- Multi-turn analytics
+- Query history
+- User authentication
+- Role-based database permissions
+- Advanced SQL validation
+- Query cost estimation
+- Streaming agent execution
+- Improved chart selection
+- Observability and tracing
+- Production database connectors
+- Database-level query timeouts
+- Query result caching
+
+These are future directions rather than capabilities currently claimed as part of the implementation.
+
+---
+
+# Why SQLAgent AI?
 
 SQLAgent AI demonstrates how an LLM can be integrated into a structured software system rather than being used as a standalone chatbot.
 
@@ -650,9 +810,9 @@ LLMs
   +
 Agentic Workflows
   +
-Databases
+Relational Databases
   +
-SQL
+Text-to-SQL
   +
 Validation
   +
@@ -663,46 +823,49 @@ Data Visualization
 Cloud Deployment
 ```
 
-The result is an end-to-end **AI analytics application** capable of translating human questions into database operations and returning understandable analytical answers.
+The result is an end-to-end AI analytics application capable of translating natural-language questions into database operations and returning understandable analytical results.
 
 ---
 
-# 👨‍💻 Author
+# Author
 
-## Eng.Abdelrahman Ahmed Akl
+## Abdelrahman Ahmed Akl
 
 **AI Engineer | AI Instructor | Agentic AI & LLMs**
 
-Areas of focus:
+### Areas of Focus
 
-```text
-Artificial Intelligence
-Machine Learning
-Deep Learning
-Natural Language Processing
-Computer Vision
-Large Language Models
-AI Agents
-Generative AI
-```
+- Artificial Intelligence
+- Machine Learning
+- Deep Learning
+- Natural Language Processing
+- Computer Vision
+- Large Language Models
+- AI Agents
+- Generative AI
 
-### 🔗 Links
+---
 
-**GitHub:**
+# Links
+
+### GitHub
+
 https://github.com/AbdelrhmanAkl
 
-**SQLAgent AI Repository:**
+### SQLAgent AI Repository
+
 https://github.com/AbdelrhmanAkl/SQLAgent-AI
 
-**Live Demo:**
+### Live Demo
+
 https://sqlagent-ai.streamlit.app/
 
 ---
 
-## ⭐ Explore the Project
+# Explore the Project
 
-If you are interested in **Text-to-SQL, LLM applications, AI agents, or intelligent data analytics**, feel free to explore the source code and try the live application.
+If you are interested in **Text-to-SQL, LLM applications, AI agents, relational databases, or intelligent data analytics**, explore the source code and try the live application.
 
-### ◈ SQLAgent AI
+## SQLAgent AI
 
-**Ask your database. Let the agent handle the SQL.**
+> **Ask your database. Let the agent handle the SQL.**
