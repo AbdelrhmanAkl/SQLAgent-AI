@@ -284,9 +284,10 @@ st.markdown(
 
     /* ========================================================
        Answer Card
+       (st.container(key="answer_card") -> .st-key-answer_card)
        ======================================================== */
 
-    .answer-card {
+    .st-key-answer_card {
         background: var(--card);
         border: 1px solid var(--border);
         border-left: 5px solid var(--accent);
@@ -296,18 +297,36 @@ st.markdown(
         box-shadow: var(--shadow-md);
     }
 
+    .st-key-answer_card p,
+    .st-key-answer_card li {
+        color: var(--text);
+        font-size: 1.03rem;
+        line-height: 1.7;
+    }
+
+    .st-key-answer_card table {
+        width: auto;
+        border-collapse: collapse;
+        margin-top: 0.6rem;
+    }
+
+    .st-key-answer_card th,
+    .st-key-answer_card td {
+        border: 1px solid var(--border);
+        padding: 0.5rem 0.9rem;
+    }
+
+    .st-key-answer_card th {
+        background: var(--bg-soft);
+        color: var(--text);
+    }
+
     .answer-label {
         color: var(--accent);
         font-weight: 700;
         font-size: 0.78rem;
         letter-spacing: 0.08em;
         margin-bottom: 0.45rem;
-    }
-
-    .answer-text {
-        color: var(--text);
-        font-size: 1.03rem;
-        line-height: 1.7;
     }
 
 
@@ -777,19 +796,18 @@ if st.button(
                 unsafe_allow_html=True,
             )
 
-            st.markdown(
-                f"""
-                <div class="answer-card">
-                    <div class="answer-label">
-                        AI ANALYSIS
-                    </div>
-                    <div class="answer-text">
-                        {result["answer"]}
-                    </div>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
+            # The answer comes from the LLM as Markdown (bold text,
+            # tables, lists). It must be rendered with st.markdown
+            # (not injected into a raw HTML <div>), otherwise the
+            # Markdown is not parsed and stray </div> tags show up.
+            with st.container(key="answer_card"):
+
+                st.markdown(
+                    '<div class="answer-label">AI ANALYSIS</div>',
+                    unsafe_allow_html=True,
+                )
+
+                st.markdown(result["answer"])
 
 
             # ==================================================
