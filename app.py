@@ -466,7 +466,7 @@ with st.sidebar:
     )
 
     st.markdown(
-        "<small>Built with Python · LangGraph · Gemini · SQLite · Plotly</small>",
+        "<small>Built with Python · LangGraph · Gemini · Groq · SQLite · Plotly</small>",
         unsafe_allow_html=True,
     )
 
@@ -486,7 +486,7 @@ st.markdown(
         </div>
         <div class="hero-description">
             Ask questions about your database in natural language.
-            SQLAgent AI generates SQL with Gemini, validates it,
+            SQLAgent AI generates SQL with Gemini or Groq, validates it,
             executes it safely in read-only mode, self-corrects SQL
             errors, summarizes results, and creates visualizations
             when useful.
@@ -807,7 +807,7 @@ st.markdown(
     ">
         SQLAgent AI · Autonomous Text-to-SQL Analytics Agent
         <br>
-        Python · LangGraph · Gemini · SQLite · Plotly
+        Python · LangGraph · Gemini · Groq · SQLite · Plotly
     </div>
     """,
     unsafe_allow_html=True,
